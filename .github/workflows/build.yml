@@ -85,6 +85,11 @@ jobs:
             dpkg-dev \
             fakeroot
 
+      - name: Create frontend placeholder (required by tauri-build)
+        run: |
+          mkdir -p apps/tauri/desktop/dist
+          echo '<!doctype html><html><body></body></html>' > apps/tauri/desktop/dist/index.html
+
       - name: Build workspace (release)
         run: cargo build --release --workspace
         env:
