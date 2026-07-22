@@ -1,0 +1,28 @@
+[package]
+name = "nostr-portable-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+nostr-portable-crypto = { path = "../../../../crates/crypto" }
+nostr-portable-vault = { path = "../../../../crates/vault" }
+nostr-portable-permissions = { path = "../../../../crates/permissions" }
+nostr-portable-protocol = { path = "../../../../crates/protocol" }
+nostr-portable-signer-core = { path = "../../../../crates/signer-core" }
+nostr = "0.44"
+thiserror = "2"
+log = "0.4"
+tokio = { version = "1", features = ["sync"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

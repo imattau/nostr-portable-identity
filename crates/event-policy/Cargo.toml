@@ -1,0 +1,9 @@
+[package]
+name = "nostr-portable-event-policy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nostr = "0.44"
+thiserror = "2"

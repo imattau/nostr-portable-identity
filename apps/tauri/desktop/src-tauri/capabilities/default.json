@@ -1,0 +1,14 @@
+{
+  "identifier": "default",
+  "description": "Default capability",
+  "windows": ["*"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "autostart:default",
+    "updater:default",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled"
+  ]
+}

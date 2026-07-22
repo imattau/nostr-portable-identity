@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Nostr Portable Identity
+Comment=Portable encrypted Nostr signer vault
+Exec=/usr/bin/nostr-portable-desktop
+Icon=com.nostr.portable.identity
+Terminal=false
+Type=Application
+Categories=Utility;Network;
+StartupNotify=true
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5

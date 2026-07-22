@@ -1,0 +1,67 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+  "productName": "Nostr Portable Identity",
+  "version": "0.1.0",
+  "identifier": "com.nostr.portable.identity",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": false
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "deb",
+      "appimage",
+      "rpm",
+      "msi",
+      "dmg"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libappindicator3-1",
+          "librsvg2-2",
+          "libjavascriptcoregtk-4.1-0"
+        ]
+      }
+    },
+    "windows": {
+      "wix": null,
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://releases.nostr-portable-identity.com/{{target}}/{{current_version}}"
+      ],
+      "pubkey": ""
+    },
+    "autostart": {
+      "active": true
+    }
+  }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "nostr-portable-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nostr-portable-crypto = { path = "../crypto" }
+nostr-portable-vault = { path = "../vault" }
+nostr-portable-event-policy = { path = "../event-policy" }
+nostr-portable-permissions = { path = "../permissions" }
+nostr-portable-protocol = { path = "../protocol" }
+nostr-portable-signer-core = { path = "../signer-core" }
+nostr = "0.44"
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"

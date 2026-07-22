@@ -1,0 +1,79 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+button:hover {
+  border-color: #396cd8;
+}
+
+button:active {
+  border-color: #396cd8;
+  background: #e8e8e8;
+}
+
+input[type="password"],
+input[type="text"] {
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline: none;
+  border-color: #396cd8;
+}
+
+.window-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+h2 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.status-locked {
+  background: #e74c3c;
+}
+
+.status-unlocked {
+  background: #2ecc71;
+}
+
+.status-absent {
+  background: #f39c12;
+}

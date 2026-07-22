@@ -1,0 +1,9 @@
+{
+  "name": "com.nostr.portable.identity",
+  "description": "Nostr Portable Identity Native Messaging Host",
+  "path": "/usr/lib/nostr-portable-identity/nostr-portable-nm-host",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://__CHROME_EXTENSION_ID__/"
+  ]
+}
