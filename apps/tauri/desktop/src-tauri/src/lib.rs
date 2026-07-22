@@ -1,3 +1,4 @@
+mod android;
 mod commands;
 mod ipc_server;
 
