@@ -14,20 +14,22 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - run: (cd extensions/chromium && zip -r ../../chromium-extension.zip .)
       - uses: actions/upload-artifact@v4
         with:
           name: chromium-extension
-          path: extensions/chromium/
+          path: chromium-extension.zip
 
   extensions-firefox:
     name: Extension (Firefox)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - run: (cd extensions/firefox && zip -r ../../firefox-extension.zip .)
       - uses: actions/upload-artifact@v4
         with:
           name: firefox-extension
-          path: extensions/firefox/
+          path: firefox-extension.zip
 
   rust-workspace:
     name: Rust workspace (${{ matrix.os }})
@@ -176,7 +178,7 @@ jobs:
 
   publish:
     name: Create GitHub Release
-    needs: [extensions-chromium, extensions-firefox, tauri-linux, tauri-windows, tauri-android]
+    needs: [extensions-chromium, extensions-firefox, rust-workspace, tauri-linux, tauri-windows, tauri-android]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -210,14 +212,13 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/chromium-extension/**
-            artifacts/firefox-extension/**
+            artifacts/chromium-extension/chromium-extension.zip
+            artifacts/firefox-extension/firefox-extension.zip
             artifacts/tauri-linux/*.deb
             artifacts/tauri-linux/*.AppImage
             artifacts/tauri-linux/nostr-portable-desktop
             artifacts/tauri-windows/*.msi
             artifacts/tauri-windows/*.exe
-            artifacts/tauri-windows/nostr-portable-desktop.exe
             artifacts/tauri-android/**/*.apk
             artifacts/cli-ubuntu-24.04/nostr-portable-cli
             artifacts/cli-ubuntu-24.04/nostr-portable-nm-host
