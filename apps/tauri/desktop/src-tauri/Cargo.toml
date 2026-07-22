@@ -21,7 +21,12 @@ nostr-portable-signer-core = { path = "../../../../crates/signer-core" }
 nostr = "0.44"
 thiserror = "2"
 log = "0.4"
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "net", "rt", "macros"] }
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
+futures-util = "0.3"
+
+[dev-dependencies]
+tempfile = "3"
 
 [features]
 default = ["custom-protocol"]
