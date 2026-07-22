@@ -9,20 +9,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  extensions:
-    name: Package extensions
+  extensions-chromium:
+    name: Extension (Chromium)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          cd extensions/chromium && zip -r ../../chromium-extension.zip . -x "*.gitkeep" -x ".*"
-          cd extensions/firefox && zip -r ../../firefox-extension.zip . -x "*.gitkeep" -x ".*"
       - uses: actions/upload-artifact@v4
         with:
-          name: extensions
-          path: |
-            chromium-extension.zip
-            firefox-extension.zip
+          name: chromium-extension
+          path: extensions/chromium/
+
+  extensions-firefox:
+    name: Extension (Firefox)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension
+          path: extensions/firefox/
 
   rust-workspace:
     name: Rust workspace (${{ matrix.os }})
@@ -171,7 +176,7 @@ jobs:
 
   publish:
     name: Create GitHub Release
-    needs: [extensions, tauri-linux, tauri-windows, tauri-android]
+    needs: [extensions-chromium, extensions-firefox, tauri-linux, tauri-windows, tauri-android]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -205,8 +210,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/extensions/chromium-extension.zip
-            artifacts/extensions/firefox-extension.zip
+            artifacts/chromium-extension/**
+            artifacts/firefox-extension/**
             artifacts/tauri-linux/*.deb
             artifacts/tauri-linux/*.AppImage
             artifacts/tauri-linux/nostr-portable-desktop
