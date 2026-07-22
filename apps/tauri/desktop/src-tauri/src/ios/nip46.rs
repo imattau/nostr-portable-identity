@@ -1,7 +1,7 @@
 use nostr::key::PublicKey;
 use nostr_portable_protocol::nip46::{
     Nip46Request, Nip46Response, METHOD_GET_PUBLIC_KEY, METHOD_SIGN_EVENT,
-    METHOD_NIP44_ENCRYPT, METHOD_NIP44_DECRYPT, METHOD_CONNECT,
+    METHOD_NIP44_ENCRYPT, METHOD_NIP44_DECRYPT,
 };
 use nostr_portable_protocol::{Nip44EncryptRequest, Nip44DecryptRequest, SignEventRequest, NostrSigner};
 use nostr_portable_signer_core::SignerService;

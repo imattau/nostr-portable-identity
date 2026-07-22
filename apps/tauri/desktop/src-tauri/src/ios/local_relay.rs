@@ -213,7 +213,7 @@ async fn process_request(request: Nip46Request, app_state: &Arc<AppState>) -> Ni
 
         let signer = app_state.signer.lock().unwrap();
         match (pk, signer.get_public_key()) {
-            (Ok(client_pk), Ok(signer_pk)) => {
+            (Ok(_client_pk), Ok(signer_pk)) => {
                 let ack = super::nip46::build_connect_response(&signer_pk);
                 drop(signer);
                 Nip46Response {
