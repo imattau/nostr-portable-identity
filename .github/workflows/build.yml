@@ -208,9 +208,10 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub \
             https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Install GNOME SDK
+      - name: Install GNOME SDK and runtime
         run: |
           flatpak install --user --assumeyes flathub org.gnome.Sdk/x86_64/50
+          flatpak install --user --assumeyes flathub org.gnome.Platform/x86_64/50
       - name: Build Flatpak
         run: |
           flatpak-builder --user --force-clean \
