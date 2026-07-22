@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Nostr Portable Identity
+Comment=Portable Nostr identity manager
+Exec=nostr-portable-desktop
+Icon=com.nostr.portable.identity
+Terminal=false
+Categories=Network;Utility;

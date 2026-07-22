@@ -159,6 +159,73 @@ jobs:
             apps/tauri/desktop/src-tauri/target/release/nostr-portable-desktop
           if-no-files-found: warn
 
+  tauri-linux-flatpak:
+    name: Tauri desktop (Flatpak)
+    runs-on: ubuntu-24.04
+    needs: rust-workspace
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            apps/tauri/desktop/src-tauri
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev \
+            librsvg2-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev \
+            libxdo-dev libssl-dev \
+            flatpak flatpak-builder
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/tauri/desktop/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: apps/tauri/desktop
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: apps/tauri/desktop
+        run: npm run tauri build
+        env:
+          CARGO_TERM_COLOR: always
+
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Build Flatpak
+        run: |
+          flatpak-builder --user --force-clean \
+            --repo=flatpak-repo \
+            flatpak-build \
+            build-aux/flatpak/com.nostr.portable.identity.yml
+          flatpak build-bundle \
+            flatpak-repo \
+            nostr-portable-identity.flatpak \
+            com.nostr.portable.identity
+
+      - name: Upload Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-desktop-linux-flatpak
+          path: nostr-portable-identity.flatpak
+          if-no-files-found: warn
+
   tauri-windows:
     name: Tauri desktop (Windows)
     runs-on: windows-2022

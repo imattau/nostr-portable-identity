@@ -176,9 +176,56 @@ jobs:
           name: tauri-android
           path: apps/tauri/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
 
+  tauri-linux-flatpak:
+    name: Tauri desktop (Flatpak)
+    runs-on: ubuntu-24.04
+    needs: rust-workspace
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            apps/tauri/desktop/src-tauri
+      - run: |
+          sudo apt-get update && sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev librsvg2-dev \
+            libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libxdo-dev libssl-dev \
+            flatpak flatpak-builder
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/tauri/desktop/package-lock.json
+      - run: npm ci
+        working-directory: apps/tauri/desktop
+      - run: npm run tauri build
+        working-directory: apps/tauri/desktop
+        env:
+          CARGO_TERM_COLOR: always
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+      - name: Build Flatpak
+        run: |
+          flatpak-builder --user --force-clean \
+            --repo=flatpak-repo \
+            flatpak-build \
+            build-aux/flatpak/com.nostr.portable.identity.yml
+          flatpak build-bundle \
+            flatpak-repo \
+            nostr-portable-identity.flatpak \
+            com.nostr.portable.identity
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tauri-linux-flatpak
+          path: nostr-portable-identity.flatpak
+
   publish:
     name: Create GitHub Release
-    needs: [extensions-chromium, extensions-firefox, rust-workspace, tauri-linux, tauri-windows, tauri-android]
+    needs: [extensions-chromium, extensions-firefox, rust-workspace, tauri-linux, tauri-linux-flatpak, tauri-windows, tauri-android]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -217,6 +264,7 @@ jobs:
             artifacts/tauri-linux/*.deb
             artifacts/tauri-linux/*.AppImage
             artifacts/tauri-linux/nostr-portable-desktop
+            artifacts/tauri-linux-flatpak/*.flatpak
             artifacts/tauri-windows/*.msi
             artifacts/tauri-windows/*.exe
             artifacts/tauri-android/**/*.apk

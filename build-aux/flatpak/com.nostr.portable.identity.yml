@@ -1,0 +1,34 @@
+app-id: com.nostr.portable.identity
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+command: nostr-portable-desktop
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --socket=pulseaudio
+
+modules:
+  - name: nostr-portable-identity
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 nostr-portable-desktop /app/bin/nostr-portable-desktop
+      - install -Dm644 com.nostr.portable.identity.desktop
+        /app/share/applications/com.nostr.portable.identity.desktop
+      - install -Dm644 icon.png
+        /app/share/icons/hicolor/512x512/apps/com.nostr.portable.identity.png
+      - install -Dm644 icon.png
+        /app/share/icons/hicolor/256x256/apps/com.nostr.portable.identity.png
+      - install -Dm644 icon.png
+        /app/share/icons/hicolor/128x128/apps/com.nostr.portable.identity.png
+    sources:
+      - type: file
+        path: ../../apps/tauri/desktop/src-tauri/target/release/nostr-portable-desktop
+      - type: file
+        path: ../../apps/tauri/desktop/src-tauri/icons/icon.png
+      - type: file
+        path: com.nostr.portable.identity.desktop
