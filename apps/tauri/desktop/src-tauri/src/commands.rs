@@ -5,6 +5,7 @@ use nostr_portable_permissions::{ClientIdentity, PermissionEntry, PermissionRule
 use nostr_portable_protocol::{ApprovalRequest, NostrSigner, SignEventRequest};
 use nostr_portable_signer_core::{PermissionCheck, SignerService};
 use nostr_portable_vault as vault;
+use nostr_portable_vault::providers::local_file::LocalFileVaultProvider;
 use nostr_portable_vault::{UsbFileVaultProvider, VaultProvider};
 
 use crate::AppState;
@@ -177,4 +178,50 @@ pub fn submit_approval(state: State<'_, AppState>, approved: bool) -> Result<(),
     } else {
         Err("no pending approval request".into())
     }
+}
+
+#[derive(serde::Serialize)]
+pub struct IdentityInfo {
+    pub name: String,
+    pub provider_type: String,
+    pub available: bool,
+}
+
+#[tauri::command]
+pub fn create_local_vault(
+    name: String,
+    passphrase: String,
+    nsec: Option<String>,
+) -> Result<String, String> {
+    let mut provider = LocalFileVaultProvider::new().map_err(|e| e.to_string())?;
+    let keys = match nsec {
+        Some(nsec) => nostr_portable_crypto::parse_keys(&nsec).map_err(|e| e.to_string())?,
+        None => nostr_portable_crypto::generate_keys(),
+    };
+    let vault = provider.create(&name, &keys, &passphrase)
+        .map_err(|e| e.to_string())?;
+    serde_json::to_string(&vault).map_err(|e| format!("serialization error: {}", e))
+}
+
+#[tauri::command]
+pub fn list_local_vaults() -> Result<Vec<IdentityInfo>, String> {
+    let provider = LocalFileVaultProvider::new().map_err(|e| e.to_string())?;
+    let names = provider.list_vaults().map_err(|e| e.to_string())?;
+    let mut vaults = Vec::new();
+    for name in &names {
+        let active = provider.name();
+        vaults.push(IdentityInfo {
+            name: name.clone(),
+            provider_type: "local".into(),
+            available: name == active,
+        });
+    }
+    Ok(vaults)
+}
+
+#[tauri::command]
+pub fn switch_local_identity(name: String) -> Result<(), String> {
+    let mut provider = LocalFileVaultProvider::new().map_err(|e| e.to_string())?;
+    provider.set_active(&name);
+    Ok(())
 }

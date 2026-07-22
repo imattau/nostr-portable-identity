@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
-  import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+  import { getCurrentWebviewWindow, WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
   interface SignerStatus {
     state: string;
@@ -106,6 +106,16 @@
       error = String(e);
     }
   }
+
+  function openSettings() {
+    const settingsWindow = new WebviewWindow("settings", {
+      url: "index.html",
+      title: "Settings - Nostr Portable Identity",
+      width: 500,
+      height: 600,
+      resizable: true,
+    });
+  }
 </script>
 
 <div class="window-container">
@@ -155,6 +165,7 @@
         bind:value={passphrase}
       />
       <button onclick={unlock}>Unlock</button>
+      <button class="secondary" onclick={openSettings}>+ Create New Vault</button>
     </div>
   {:else}
     <div class="actions-panel">
@@ -236,5 +247,11 @@
     font-size: 12px;
     font-family: monospace;
     word-break: break-all;
+  }
+
+  .secondary {
+    background: #f0f0f0;
+    border-color: #ccc;
+    font-size: 13px;
   }
 </style>

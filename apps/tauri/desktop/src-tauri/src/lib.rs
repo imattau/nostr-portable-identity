@@ -59,10 +59,12 @@ fn open_unlock_window(app: &AppHandle) {
 #[cfg(desktop)]
 fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let show = tauri::menu::MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
-    let settings = tauri::menu::MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+    let new_vault = tauri::menu::MenuItem::with_id(app, "new_vault", "Create New Vault...", true, None::<&str>)?;
+    let manage = tauri::menu::MenuItem::with_id(app, "settings", "Manage Vaults...", true, None::<&str>)?;
+    let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
     let quit = tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
-    let menu = tauri::menu::Menu::with_items(app, &[&show, &settings, &quit])?;
+    let menu = tauri::menu::Menu::with_items(app, &[&show, &separator, &new_vault, &manage, &separator, &quit])?;
 
     let icon = app.default_window_icon().cloned().unwrap_or_else(|| {
         tauri::image::Image::new(&[], 0, 0)
@@ -73,6 +75,7 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .menu(&menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => open_unlock_window(app),
+            "new_vault" => open_settings_window(app),
             "settings" => open_settings_window(app),
             "quit" => app.exit(0),
             _ => {}
@@ -127,6 +130,9 @@ pub fn run() {
             vault_info,
             get_pending_approval,
             submit_approval,
+            create_local_vault,
+            list_local_vaults,
+            switch_local_identity,
         ]);
 
     builder
