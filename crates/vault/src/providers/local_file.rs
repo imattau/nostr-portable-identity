@@ -39,6 +39,16 @@ impl LocalFileVaultProvider {
         })
     }
 
+    #[cfg(test)]
+    pub(crate) fn new_with_home(home: PathBuf) -> Result<Self, Error> {
+        let vaults_dir = home.join(APP_DIR).join(VAULTS_DIR);
+        fs::create_dir_all(&vaults_dir).map_err(Error::Io)?;
+        Ok(Self {
+            vaults_dir,
+            active_name: DEFAULT_VAULT_NAME.to_string(),
+        })
+    }
+
     /// Set the active vault name (supports multiple identities)
     pub fn set_active(&mut self, name: &str) {
         self.active_name = name.to_string();
@@ -102,6 +112,9 @@ impl VaultProvider for LocalFileVaultProvider {
 
     fn write_encrypted_vault(&self, vault: &EncryptedVault) -> Result<(), Error> {
         let path = self.active_path();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(Error::Io)?;
+        }
         let content = serde_json::to_string_pretty(vault)?;
         fs::write(&path, content)?;
         Ok(())
@@ -121,8 +134,7 @@ mod tests {
 
     fn create_local_provider(tmp: &TempDir) -> LocalFileVaultProvider {
         let home = tmp.path().join("home");
-        env::set_var("HOME", home.to_str().unwrap());
-        LocalFileVaultProvider::new().unwrap()
+        LocalFileVaultProvider::new_with_home(home).unwrap()
     }
 
     #[test]
