@@ -74,10 +74,9 @@ impl LocalRelay {
                     }
                 };
                 let actual_port = listener.local_addr().unwrap().port();
+                running.store(true, Ordering::SeqCst);
                 let _ = tx_ready.send(actual_port);
                 log::info!("LocalRelay: listening on 127.0.0.1:{}", actual_port);
-
-                running.store(true, Ordering::SeqCst);
 
                 while running.load(Ordering::SeqCst) {
                     if paused.load(Ordering::SeqCst) {
