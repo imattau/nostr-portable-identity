@@ -1,6 +1,8 @@
 mod android;
 mod commands;
 mod ios;
+
+#[cfg(desktop)]
 mod ipc_server;
 
 use std::sync::Mutex;
@@ -9,8 +11,10 @@ use std::time::Duration;
 use nostr_portable_permissions::PermissionStore;
 use nostr_portable_protocol::ApprovalRequest;
 use nostr_portable_signer_core::SignerService;
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+
+#[cfg(desktop)]
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
 use commands::*;
 
@@ -52,6 +56,7 @@ fn open_unlock_window(app: &AppHandle) {
         .build();
 }
 
+#[cfg(desktop)]
 fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let show = tauri::menu::MenuItem::with_id(app, "show", "Show Window", true, None::<&str>)?;
     let settings = tauri::menu::MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
@@ -88,18 +93,28 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec!["--autostart"]),
-        ))
-        .plugin(tauri_plugin_updater::Builder::default().build())
-        .manage(AppState::new())
+        .manage(AppState::new());
+
+    #[cfg(desktop)]
+    {
+        builder = builder
+            .plugin(tauri_plugin_autostart::init(
+                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                Some(vec!["--autostart"]),
+            ))
+            .plugin(tauri_plugin_updater::Builder::default().build());
+    }
+
+    builder = builder
         .setup(|app| {
-            let handle = app.handle().clone();
-            setup_tray(app.handle())?;
-            ipc_server::start_ipc_server(handle);
+            #[cfg(desktop)]
+            {
+                let handle = app.handle().clone();
+                setup_tray(app.handle())?;
+                ipc_server::start_ipc_server(handle);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -112,7 +127,9 @@ pub fn run() {
             vault_info,
             get_pending_approval,
             submit_approval,
-        ])
+        ]);
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
