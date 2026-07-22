@@ -10,14 +10,13 @@ use nostr_portable_permissions::PermissionStore;
 use nostr_portable_protocol::ApprovalRequest;
 use nostr_portable_signer_core::SignerService;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 use commands::*;
 
 pub struct AppState {
     pub signer: Mutex<SignerService>,
     pub pending_approval: Mutex<Option<ApprovalRequest>>,
-    pub last_status: Mutex<String>,
 }
 
 impl AppState {
@@ -25,31 +24,8 @@ impl AppState {
         Self {
             signer: Mutex::new(SignerService::new(None, PermissionStore::new(), Duration::from_secs(300))),
             pending_approval: Mutex::new(None),
-            last_status: Mutex::new("locked".into()),
         }
     }
-}
-
-#[derive(serde::Serialize, Clone)]
-struct SignerStatusEvent {
-    state: String,
-    vault_present: bool,
-    public_key: Option<String>,
-}
-
-fn emit_status(app: &AppHandle, state: &AppState) {
-    let signer = state.signer.lock().unwrap();
-    let status = signer.status();
-    let event = SignerStatusEvent {
-        state: status.state.clone(),
-        vault_present: status.vault_present,
-        public_key: status.public_key.clone(),
-    };
-    let status_str = status.state.clone();
-    drop(signer);
-
-    let _ = app.emit("signer-status", event);
-    *state.last_status.lock().unwrap() = status_str;
 }
 
 fn open_settings_window(app: &AppHandle) {

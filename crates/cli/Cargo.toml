@@ -14,3 +14,4 @@ nostr-portable-signer-core = { path = "../signer-core" }
 nostr = "0.44"
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"
+rpassword = "7"

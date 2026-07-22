@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use nostr_portable_vault as vault;
 use nostr_portable_vault::VaultProvider;
 
 use crate::Error;

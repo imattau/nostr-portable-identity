@@ -1,8 +1,8 @@
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use crate::{create_vault, unlock_vault, EncryptedVault, Error, VaultProvider};
+use crate::{create_vault, EncryptedVault, Error, VaultProvider};
 
 const APP_DIR: &str = ".nostr-portable-identity";
 const VAULTS_DIR: &str = "vaults";
@@ -115,6 +115,7 @@ impl VaultProvider for LocalFileVaultProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::unlock_vault;
     use nostr_portable_crypto::Keys;
     use tempfile::TempDir;
 

@@ -220,12 +220,7 @@ impl NostrSigner for SignerService {
 }
 
 fn uuid_v4() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    format!("req-{}", nanos)
+    uuid::Uuid::new_v4().to_string()
 }
 
 #[cfg(test)]

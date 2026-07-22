@@ -15,15 +15,12 @@ use nostr_portable_protocol::NostrSigner;
 use crate::AppState;
 
 fn get_socket_path() -> PathBuf {
-    if let Ok(runtime_dir) = env::var("XDG_RUNTIME_DIR") {
-        PathBuf::from(runtime_dir).join("nostr-portable-identity.sock")
-    } else if let Ok(home) = env::var("HOME") {
-        let dir = PathBuf::from(&home).join(".nostr-portable-identity");
-        let _ = fs::create_dir_all(&dir);
-        dir.join("ipc.sock")
-    } else {
-        PathBuf::from("/tmp/nostr-portable-identity.sock")
-    }
+    let home = env::var("HOME")
+        .or_else(|_| env::var("USERPROFILE"))
+        .expect("HOME must be set to run the IPC server");
+    let dir = PathBuf::from(&home).join(".nostr-portable-identity");
+    fs::create_dir_all(&dir).expect("failed to create IPC directory");
+    dir.join("ipc.sock")
 }
 
 #[derive(serde::Deserialize)]

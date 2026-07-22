@@ -12,7 +12,7 @@
   "app": {
     "windows": [],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'"
     },
     "withGlobalTauri": false
   },
@@ -54,10 +54,8 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
-      "endpoints": [
-        "https://releases.nostr-portable-identity.com/{{target}}/{{current_version}}"
-      ],
+      "active": false,
+      "endpoints": [],
       "pubkey": ""
     },
     "autostart": {

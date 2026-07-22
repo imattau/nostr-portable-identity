@@ -1,7 +1,7 @@
 pub mod providers;
 
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 use nostr_portable_crypto as crypto;
 use crypto::{PublicKey, Timestamp};
 use serde::{Deserialize, Serialize};

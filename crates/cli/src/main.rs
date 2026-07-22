@@ -8,6 +8,15 @@ use nostr_portable_signer_core::{PermissionCheck, SignerService};
 use nostr_portable_vault as vault;
 use nostr_portable_vault::{UsbFileVaultProvider, VaultProvider};
 
+fn prompt_passphrase(prompt: &str) -> String {
+    rpassword::prompt_password(prompt).unwrap_or_else(|_| {
+        eprint!("{}", prompt);
+        let mut pass = String::new();
+        std::io::stdin().read_line(&mut pass).ok();
+        pass.trim().to_string()
+    })
+}
+
 #[derive(Parser)]
 #[command(name = "nostr-portable", about = "Nostr Portable Identity CLI")]
 struct Cli {
@@ -17,14 +26,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Create a new encrypted vault
+    /// Create a new encrypted vault (passphrase prompted via stdin)
     Create {
         #[arg(short, long)]
         path: String,
         #[arg(short, long, default_value = "Primary identity")]
         name: String,
-        #[arg(short, long)]
-        passphrase: String,
         #[arg(short, long)]
         nsec: Option<String>,
     },
@@ -33,12 +40,10 @@ enum Command {
         #[arg(short, long)]
         path: String,
     },
-    /// Unlock vault and start signing session
+    /// Unlock vault and start signing session (passphrase prompted via stdin)
     Unlock {
         #[arg(short, long)]
         path: String,
-        #[arg(short, long)]
-        passphrase: String,
         #[arg(short, long, default_value = "300")]
         timeout: u64,
     },
@@ -113,7 +118,8 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Command::Create { path, name, passphrase, nsec } => {
+        Command::Create { path, name, nsec } => {
+            let passphrase = prompt_passphrase("Vault passphrase: ");
             let provider = UsbFileVaultProvider::new(path);
             let keys = match nsec {
                 Some(nsec) => match crypto::parse_keys(nsec) {
@@ -125,7 +131,7 @@ fn main() {
                 },
                 None => crypto::generate_keys(),
             };
-            match vault::create_vault(&provider, name.clone(), &keys, passphrase) {
+            match vault::create_vault(&provider, name.clone(), &keys, &passphrase) {
                 Ok(vault) => {
                     println!("Vault created successfully!");
                     println!("  Name:     {}", vault.name);
@@ -162,14 +168,15 @@ fn main() {
                 }
             }
         }
-        Command::Unlock { path, passphrase, timeout } => {
+        Command::Unlock { path, timeout } => {
+            let passphrase = prompt_passphrase("Vault passphrase: ");
             let provider = Box::new(UsbFileVaultProvider::new(path));
             let mut service = SignerService::new(
                 Some(provider),
                 PermissionStore::new(),
                 Duration::from_secs(*timeout),
             );
-            match service.unlock(passphrase) {
+            match service.unlock(&passphrase) {
                 Ok(()) => {
                     println!("Vault unlocked. Session active (timeout: {}s).", timeout);
                     println!("Available commands: pubkey, sign <text>, lock, status");

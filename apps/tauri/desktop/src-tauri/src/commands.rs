@@ -2,12 +2,20 @@ use tauri::{AppHandle, Emitter, State};
 
 use nostr::event::EventBuilder;
 use nostr_portable_permissions::{ClientIdentity, PermissionEntry, PermissionRule, PermissionStore};
-use nostr_portable_protocol::{NostrSigner, SignEventRequest};
+use nostr_portable_protocol::{ApprovalRequest, NostrSigner, SignEventRequest};
 use nostr_portable_signer_core::{PermissionCheck, SignerService};
 use nostr_portable_vault as vault;
 use nostr_portable_vault::{UsbFileVaultProvider, VaultProvider};
 
 use crate::AppState;
+
+fn lock_state(state: &AppState) -> Result<std::sync::MutexGuard<'_, SignerService>, String> {
+    state.signer.lock().map_err(|_| "signer lock poisoned".to_string())
+}
+
+fn lock_pending(state: &AppState) -> Result<std::sync::MutexGuard<'_, Option<ApprovalRequest>>, String> {
+    state.pending_approval.lock().map_err(|_| "pending approval lock poisoned".to_string())
+}
 
 #[derive(serde::Serialize)]
 pub struct SignerStatusResponse {
@@ -19,7 +27,8 @@ pub struct SignerStatusResponse {
 
 #[tauri::command]
 pub fn get_status(state: State<'_, AppState>) -> SignerStatusResponse {
-    let signer = state.signer.lock().unwrap();
+    let signer = state.signer.lock()
+        .expect("signer lock poisoned");
     let status = signer.status();
     SignerStatusResponse {
         state: status.state,
@@ -31,7 +40,7 @@ pub fn get_status(state: State<'_, AppState>) -> SignerStatusResponse {
 
 #[tauri::command]
 pub fn get_public_key(state: State<'_, AppState>) -> Result<String, String> {
-    let signer = state.signer.lock().unwrap();
+    let signer = lock_state(&state)?;
     signer
         .get_public_key()
         .map(|pk| pk.to_hex())
@@ -48,11 +57,11 @@ pub fn unlock_vault(
 ) -> Result<(), String> {
     let provider: Box<dyn VaultProvider> = Box::new(UsbFileVaultProvider::new(&path));
     {
-        let mut signer = state.signer.lock().unwrap();
+        let mut signer = lock_state(&state)?;
         signer.set_provider(provider);
     }
     {
-        let mut signer = state.signer.lock().unwrap();
+        let mut signer = lock_state(&state)?;
         signer.unlock(&passphrase).map_err(|e| e.to_string())?;
     }
     let _ = app.emit("unlocked", ());
@@ -61,7 +70,7 @@ pub fn unlock_vault(
 
 #[tauri::command]
 pub fn lock_signer(state: State<'_, AppState>) -> Result<(), String> {
-    let mut signer = state.signer.lock().unwrap();
+    let mut signer = lock_state(&state)?;
     SignerService::lock(&mut *signer).map_err(|e| e.to_string())
 }
 
@@ -74,7 +83,7 @@ pub fn sign_text_note(
     let identity = ClientIdentity::Unknown("tauri-app".into());
 
     {
-        let signer = state.signer.lock().unwrap();
+        let signer = lock_state(&state)?;
         match signer.evaluate_permission(
             &identity,
             "signEvent",
@@ -83,26 +92,24 @@ pub fn sign_text_note(
             PermissionCheck::Allowed => {}
             PermissionCheck::Denied(reason) => return Err(reason),
             PermissionCheck::Ask(request) => {
-                *state.pending_approval.lock().unwrap() = Some(request.clone());
-                let _ = app.emit(
-                    "approval-request",
-                    serde_json::to_string(&request).unwrap(),
-                );
+                let json = serde_json::to_string(&request)
+                    .map_err(|e| format!("serialization error: {}", e))?;
+                *lock_pending(&state)? = Some(request.clone());
+                let _ = app.emit("approval-request", json);
                 return Err("approval_required".into());
             }
         }
     }
 
     let (unsigned, kind) = {
-        let signer = state.signer.lock().unwrap();
+        let signer = lock_state(&state)?;
         let pk = signer.get_public_key().map_err(|e| e.to_string())?;
         let unsigned = EventBuilder::text_note(content.clone()).build(pk);
-        let k = nostr::event::Kind::TextNote;
-        (unsigned, k)
+        (unsigned, nostr::event::Kind::TextNote)
     };
 
     let event = {
-        let signer = state.signer.lock().unwrap();
+        let signer = lock_state(&state)?;
         let request = SignEventRequest {
             event: unsigned,
             kind,
@@ -113,7 +120,8 @@ pub fn sign_text_note(
     };
 
     let _ = app.emit("event-signed", event.id.to_hex());
-    Ok(serde_json::to_string_pretty(&event).unwrap())
+    serde_json::to_string_pretty(&event)
+        .map_err(|e| format!("serialization error: {}", e))
 }
 
 #[tauri::command]
@@ -130,25 +138,26 @@ pub fn create_vault(
     };
     let vault = vault::create_vault(&provider, name, &keys, &passphrase)
         .map_err(|e| e.to_string())?;
-    Ok(serde_json::to_string(&vault).unwrap())
+    serde_json::to_string(&vault).map_err(|e| format!("serialization error: {}", e))
 }
 
 #[tauri::command]
 pub fn vault_info(path: String) -> Result<String, String> {
     let provider = UsbFileVaultProvider::new(&path);
     let vault = provider.load_encrypted_vault().map_err(|e| e.to_string())?;
-    Ok(serde_json::to_string_pretty(&vault).unwrap())
+    serde_json::to_string_pretty(&vault).map_err(|e| format!("serialization error: {}", e))
 }
 
 #[tauri::command]
 pub fn get_pending_approval(state: State<'_, AppState>) -> Option<String> {
-    let pending = state.pending_approval.lock().unwrap();
-    pending.as_ref().map(|r| serde_json::to_string(r).unwrap())
+    let pending = state.pending_approval.lock()
+        .expect("pending approval lock poisoned");
+    pending.as_ref().and_then(|r| serde_json::to_string(r).ok())
 }
 
 #[tauri::command]
 pub fn submit_approval(state: State<'_, AppState>, approved: bool) -> Result<(), String> {
-    let mut pending = state.pending_approval.lock().unwrap();
+    let mut pending = lock_pending(&state)?;
     if let Some(request) = pending.take() {
         if approved {
             let identity = ClientIdentity::Unknown("tauri-app".into());
@@ -161,7 +170,7 @@ pub fn submit_approval(state: State<'_, AppState>, approved: bool) -> Result<(),
                     kind_restriction: None,
                 },
             );
-            let mut signer = state.signer.lock().unwrap();
+            let mut signer = lock_state(&state)?;
             *signer.permissions_mut() = permission_store;
         }
         Ok(())

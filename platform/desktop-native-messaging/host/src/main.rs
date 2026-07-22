@@ -5,13 +5,10 @@ use std::path::PathBuf;
 use std::process;
 
 fn get_socket_path() -> PathBuf {
-    if let Ok(runtime_dir) = env::var("XDG_RUNTIME_DIR") {
-        PathBuf::from(runtime_dir).join("nostr-portable-identity.sock")
-    } else if let Ok(home) = env::var("HOME") {
-        PathBuf::from(home).join(".nostr-portable-identity/ipc.sock")
-    } else {
-        PathBuf::from("/tmp/nostr-portable-identity.sock")
-    }
+    let home = env::var("HOME")
+        .or_else(|_| env::var("USERPROFILE"))
+        .expect("HOME must be set");
+    PathBuf::from(home).join(".nostr-portable-identity/ipc.sock")
 }
 
 fn read_message() -> io::Result<Vec<u8>> {
