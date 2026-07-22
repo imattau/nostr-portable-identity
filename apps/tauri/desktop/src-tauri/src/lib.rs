@@ -1,5 +1,6 @@
 mod android;
 mod commands;
+mod ios;
 mod ipc_server;
 
 use std::sync::Mutex;
