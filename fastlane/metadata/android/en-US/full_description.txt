@@ -1,0 +1,19 @@
+A portable identity manager for the Nostr protocol. It acts as a NIP-46 signer backend and a NIP-55 Android signer target, allowing you to manage your Nostr keys securely across devices.
+
+<b>Features:</b><br>
+• NIP-46 remote signing via WebSocket/IPC<bR>
+• NIP-55 Android native signing via Intents<br>
+• Biometric authentication for signing operations<br>
+• USB/OTG vault storage - encrypted JSON on USB drives<br>
+• Browser extension integration via native messaging<br>
+• Multiple vault profiles<br>
+• Auto-lock on background
+
+<b>How it works:</b><br>
+Nostr Portable Identity stores your keys in an encrypted vault file. You can keep the vault on a USB drive and use it across devices. The app runs as a background signer, responding to signing requests from Nostr clients via NIP-46 (remote signer protocol) or NIP-55 (Android Intent-based signing).
+
+<b>Browser integration:</b><br>
+Use with Chromium or Firefox extensions to sign Nostr events directly from your browser. The app communicates with the extension via native messaging.
+
+<b>Privacy:</b><br>
+Keys never leave your encrypted vault. The app requires no central server and connects directly to Nostr relays only when needed for protocol operations.

@@ -1,0 +1,5 @@
+• Initial F-Droid release
+• NIP-46 remote signing and NIP-55 Android Intent signing
+• Biometric authentication
+• USB/OTG vault storage
+• Browser extension integration
