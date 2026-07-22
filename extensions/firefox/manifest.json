@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Nostr Portable Identity",
+  "version": "0.1.0",
+  "description": "Sign Nostr events using a portable USB vault",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "nostr-portable-identity@example.com",
+      "strict_min_version": "128.0"
+    }
+  },
+  "permissions": [
+    "nativeMessaging"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["nostr-provider.js", "content.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
