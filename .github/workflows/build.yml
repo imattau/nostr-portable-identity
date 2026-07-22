@@ -211,6 +211,7 @@ jobs:
       - name: Build Flatpak
         run: |
           flatpak-builder --user --force-clean \
+            --install-deps \
             --repo=flatpak-repo \
             flatpak-build \
             build-aux/flatpak/com.nostr.portable.identity.yml
