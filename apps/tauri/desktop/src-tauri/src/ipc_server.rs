@@ -19,19 +19,18 @@ use crate::AppState;
 
 const IPC_PORT: u16 = 48631;
 
-fn get_ipc_path() -> PathBuf {
+fn get_ipc_path() -> Result<PathBuf, String> {
     let home = env::var("HOME")
         .or_else(|_| env::var("USERPROFILE"))
-        .expect("HOME must be set to run the IPC server");
+        .map_err(|_| "HOME not set for IPC server".to_string())?;
     let dir = PathBuf::from(&home).join(".nostr-portable-identity");
-    fs::create_dir_all(&dir).expect("failed to create IPC directory");
+    fs::create_dir_all(&dir).map_err(|e| format!("create IPC dir: {}", e))?;
     #[cfg(unix)]
-    { dir.join("ipc.sock") }
+    { Ok(dir.join("ipc.sock")) }
     #[cfg(windows)]
-    { dir.join("ipc.txt") } // Used as a marker file on Windows
+    { Ok(dir.join("ipc.txt")) }
 }
 
-/// Cross-platform listener: Unix socket on Linux/macOS, TCP on Windows
 enum Listener {
     #[cfg(unix)]
     Unix(UnixListener),
@@ -106,24 +105,23 @@ struct IpcResponse {
     error: Option<String>,
 }
 
+fn lock_signer<'a>(state: &'a AppState) -> Result<std::sync::MutexGuard<'a, nostr_portable_signer_core::SignerService>, String> {
+    state.signer.lock().map_err(|_| "signer lock poisoned".to_string())
+}
+
 fn handle_request(app: &AppHandle, req: IpcRequest) -> IpcResponse {
     let id = Some(req.id);
     let state = app.state::<AppState>();
 
     match req.method.as_str() {
         "getPublicKey" => {
-            let signer = state.signer.lock().unwrap();
+            let signer = match lock_signer(&state) {
+                Ok(s) => s,
+                Err(e) => return IpcResponse { id, result: None, error: Some(e) },
+            };
             match signer.get_public_key() {
-                Ok(pk) => IpcResponse {
-                    id,
-                    result: Some(serde_json::json!({ "pubkey": pk.to_hex() })),
-                    error: None,
-                },
-                Err(e) => IpcResponse {
-                    id,
-                    result: None,
-                    error: Some(e.to_string()),
-                },
+                Ok(pk) => IpcResponse { id, result: Some(serde_json::json!({ "pubkey": pk.to_hex() })), error: None },
+                Err(e) => IpcResponse { id, result: None, error: Some(e.to_string()) },
             }
         }
 
@@ -132,12 +130,10 @@ fn handle_request(app: &AppHandle, req: IpcRequest) -> IpcResponse {
                 Some(v) => v.clone(),
                 None => return IpcResponse { id, result: None, error: Some("missing 'event' parameter".into()) },
             };
-
             let unsigned: UnsignedEvent = match serde_json::from_value(event_val) {
                 Ok(e) => e,
                 Err(e) => return IpcResponse { id, result: None, error: Some(format!("invalid event: {}", e)) },
             };
-
             let kind = req.params.get("kind")
                 .and_then(|k| k.as_u64())
                 .map(|k| nostr::event::Kind::from(k as u16))
@@ -147,9 +143,15 @@ fn handle_request(app: &AppHandle, req: IpcRequest) -> IpcResponse {
             let tags: Vec<Vec<String>> = req.params.get("tags")
                 .and_then(|t| serde_json::from_value(t.clone()).ok()).unwrap_or_default();
 
-            let signer = state.signer.lock().unwrap();
+            let signer = match lock_signer(&state) {
+                Ok(s) => s,
+                Err(e) => return IpcResponse { id, result: None, error: Some(e) },
+            };
             match signer.sign_event(protocol::SignEventRequest { event: unsigned, kind, content, tags }) {
-                Ok(event) => IpcResponse { id, result: Some(serde_json::to_value(&event).unwrap()), error: None },
+                Ok(event) => {
+                    let val = serde_json::to_value(&event).unwrap_or(serde_json::json!({"error":"serialization failed"}));
+                    IpcResponse { id, result: Some(val), error: None }
+                }
                 Err(e) => IpcResponse { id, result: None, error: Some(e.to_string()) },
             }
         }
@@ -157,7 +159,10 @@ fn handle_request(app: &AppHandle, req: IpcRequest) -> IpcResponse {
         "nip44Encrypt" => {
             let pubkey = req.params.get("pubkey").and_then(|p| p.as_str()).unwrap_or("").to_string();
             let plaintext = req.params.get("plaintext").and_then(|p| p.as_str()).unwrap_or("").to_string();
-            let signer = state.signer.lock().unwrap();
+            let signer = match lock_signer(&state) {
+                Ok(s) => s,
+                Err(e) => return IpcResponse { id, result: None, error: Some(e) },
+            };
             match signer.nip44_encrypt(protocol::Nip44EncryptRequest { recipient_pubkey: pubkey, plaintext }) {
                 Ok(result) => IpcResponse { id, result: Some(serde_json::json!({ "ciphertext": result })), error: None },
                 Err(e) => IpcResponse { id, result: None, error: Some(e.to_string()) },
@@ -167,7 +172,10 @@ fn handle_request(app: &AppHandle, req: IpcRequest) -> IpcResponse {
         "nip44Decrypt" => {
             let pubkey = req.params.get("pubkey").and_then(|p| p.as_str()).unwrap_or("").to_string();
             let ciphertext = req.params.get("ciphertext").and_then(|c| c.as_str()).unwrap_or("").to_string();
-            let signer = state.signer.lock().unwrap();
+            let signer = match lock_signer(&state) {
+                Ok(s) => s,
+                Err(e) => return IpcResponse { id, result: None, error: Some(e) },
+            };
             match signer.nip44_decrypt(protocol::Nip44DecryptRequest { sender_pubkey: pubkey, ciphertext }) {
                 Ok(result) => IpcResponse { id, result: Some(serde_json::json!({ "plaintext": result })), error: None },
                 Err(e) => IpcResponse { id, result: None, error: Some(e.to_string()) },
@@ -175,9 +183,13 @@ fn handle_request(app: &AppHandle, req: IpcRequest) -> IpcResponse {
         }
 
         "getStatus" => {
-            let signer = state.signer.lock().unwrap();
+            let signer = match lock_signer(&state) {
+                Ok(s) => s,
+                Err(e) => return IpcResponse { id, result: None, error: Some(e) },
+            };
             let status = signer.status();
-            IpcResponse { id, result: Some(serde_json::to_value(&status).unwrap()), error: None }
+            let val = serde_json::to_value(&status).unwrap_or(serde_json::json!({"error":"serialization failed"}));
+            IpcResponse { id, result: Some(val), error: None }
         }
 
         _ => IpcResponse { id, result: None, error: Some(format!("unknown method: {}", req.method)) },
@@ -191,8 +203,9 @@ fn handle_connection(app: AppHandle, mut stream: Stream) {
         Ok(0) => return,
         Ok(_) => {}
         Err(e) => {
-            let resp = IpcResponse { id: None, result: None, error: Some(format!("read error: {}", e)) };
-            let _ = writeln!(&mut stream, "{}", serde_json::to_string(&resp).unwrap());
+            let resp = serde_json::to_string(&IpcResponse { id: None, result: None, error: Some(format!("read error: {}", e)) })
+                .unwrap_or_else(|_| r#"{"error":"internal error"}"#.into());
+            let _ = writeln!(&mut stream, "{}", resp);
             return;
         }
     }
@@ -200,14 +213,16 @@ fn handle_connection(app: AppHandle, mut stream: Stream) {
     let request: IpcRequest = match serde_json::from_str(&line.trim()) {
         Ok(req) => req,
         Err(e) => {
-            let resp = IpcResponse { id: None, result: None, error: Some(format!("invalid JSON: {}", e)) };
-            let _ = writeln!(&mut stream, "{}", serde_json::to_string(&resp).unwrap());
+            let resp = serde_json::to_string(&IpcResponse { id: None, result: None, error: Some(format!("invalid JSON: {}", e)) })
+                .unwrap_or_else(|_| r#"{"error":"internal error"}"#.into());
+            let _ = writeln!(&mut stream, "{}", resp);
             return;
         }
     };
 
     let response = handle_request(&app, request);
-    let json = serde_json::to_string(&response).unwrap();
+    let json = serde_json::to_string(&response)
+        .unwrap_or_else(|_| r#"{"error":"internal error"}"#.into());
     let _ = writeln!(&mut stream, "{}", json);
 }
 
@@ -230,7 +245,7 @@ pub fn start_ipc_server(app: AppHandle) {
 
 fn create_listener() -> Result<Listener, String> {
     #[cfg(unix)] {
-        let path = get_ipc_path();
+        let path = get_ipc_path()?;
         let _ = fs::remove_file(&path);
         let listener = UnixListener::bind(&path).map_err(|e| format!("bind: {}", e))?;
         #[cfg(unix)]

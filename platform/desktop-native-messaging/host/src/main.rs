@@ -6,17 +6,19 @@ use std::process;
 #[cfg(unix)]
 use std::os::unix::net::UnixStream;
 
-fn get_socket_path() -> PathBuf {
+fn get_socket_path() -> Option<PathBuf> {
     let home = env::var("HOME")
         .or_else(|_| env::var("USERPROFILE"))
-        .expect("HOME must be set");
-    PathBuf::from(home).join(".nostr-portable-identity/ipc.sock")
+        .ok()?;
+    Some(PathBuf::from(home).join(".nostr-portable-identity/ipc.sock"))
 }
 
 fn connect() -> io::Result<Box<dyn ReadWrite>> {
     #[cfg(unix)]
     {
-        let path = get_socket_path();
+        let path = get_socket_path().ok_or_else(|| {
+            io::Error::new(io::ErrorKind::NotFound, "HOME not set")
+        })?;
         let stream = UnixStream::connect(&path)?;
         Ok(Box::new(stream))
     }
@@ -38,6 +40,9 @@ fn read_message() -> io::Result<Vec<u8>> {
     let mut len_buf = [0u8; 4];
     io::stdin().read_exact(&mut len_buf)?;
     let len = u32::from_ne_bytes(len_buf) as usize;
+    if len > 1_000_000 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "message too large"));
+    }
     let mut buf = vec![0u8; len];
     io::stdin().read_exact(&mut buf)?;
     Ok(buf)
@@ -58,7 +63,7 @@ fn main() {
     let request = match read_message() {
         Ok(data) => data,
         Err(e) => {
-            let error = serde_json::json!({ "error": format!("failed to read request: {}", e) });
+            let error = serde_json::json!({ "error": format!("read error: {}", e) });
             let _ = write_message(error.to_string().as_bytes());
             process::exit(1);
         }
@@ -67,14 +72,14 @@ fn main() {
     let mut stream = match connect() {
         Ok(s) => s,
         Err(e) => {
-            let error = serde_json::json!({ "error": format!("cannot connect to signer: {}", e) });
+            let error = serde_json::json!({ "error": format!("cannot reach signer: {}", e) });
             let _ = write_message(error.to_string().as_bytes());
             process::exit(1);
         }
     };
 
     if let Err(e) = stream.write_all(&request) {
-        let error = serde_json::json!({ "error": format!("failed to send request: {}", e) });
+        let error = serde_json::json!({ "error": format!("send error: {}", e) });
         let _ = write_message(error.to_string().as_bytes());
         process::exit(1);
     }
@@ -90,7 +95,7 @@ fn main() {
                 continue;
             }
             Err(e) => {
-                let error = serde_json::json!({ "error": format!("failed to read response: {}", e) });
+                let error = serde_json::json!({ "error": format!("read error: {}", e) });
                 let _ = write_message(error.to_string().as_bytes());
                 process::exit(1);
             }
@@ -98,7 +103,7 @@ fn main() {
     }
 
     if let Err(e) = write_message(&response) {
-        eprintln!("Failed to write response to stdout: {}", e);
+        eprintln!("Write error: {}", e);
         process::exit(1);
     }
 }

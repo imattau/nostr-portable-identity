@@ -42,7 +42,7 @@
       window.addEventListener("message", handler);
       window.postMessage(
         { type: "nostr-request", method, params },
-        "*"
+        window.location.origin
       );
     });
   }

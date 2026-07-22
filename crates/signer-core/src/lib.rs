@@ -95,6 +95,7 @@ impl SignerService {
     }
 
     pub fn lock(&mut self) -> Result<(), Error> {
+        // Drop the keys, triggering ZeroizeOnDrop on the SecretKey
         self.keys = None;
         self.state = State::Locked;
         self.unlocked_at = None;

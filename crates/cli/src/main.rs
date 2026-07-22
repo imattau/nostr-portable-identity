@@ -8,6 +8,16 @@ use nostr_portable_signer_core::{PermissionCheck, SignerService};
 use nostr_portable_vault as vault;
 use nostr_portable_vault::{UsbFileVaultProvider, VaultProvider};
 
+fn validate_path(path: &str) -> Result<String, String> {
+    let canonical = std::fs::canonicalize(path)
+        .map_err(|e| format!("invalid vault path '{}': {}", path, e))?;
+    let s = canonical.to_string_lossy().to_string();
+    if s.contains("..") {
+        return Err("vault path contains directory traversal".into());
+    }
+    Ok(s)
+}
+
 fn prompt_passphrase(prompt: &str) -> String {
     rpassword::prompt_password(prompt).unwrap_or_else(|_| {
         eprint!("{}", prompt);
@@ -119,6 +129,10 @@ fn main() {
 
     match &cli.command {
         Command::Create { path, name, nsec } => {
+            let _ = validate_path(path).unwrap_or_else(|e| {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            });
             let passphrase = prompt_passphrase("Vault passphrase: ");
             let provider = UsbFileVaultProvider::new(path);
             let keys = match nsec {
@@ -146,6 +160,10 @@ fn main() {
             }
         }
         Command::Info { path } => {
+            let _ = validate_path(path).unwrap_or_else(|e| {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            });
             let provider = UsbFileVaultProvider::new(path);
             match provider.load_encrypted_vault() {
                 Ok(vault) => {
@@ -169,6 +187,10 @@ fn main() {
             }
         }
         Command::Unlock { path, timeout } => {
+            let _ = validate_path(path).unwrap_or_else(|e| {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            });
             let passphrase = prompt_passphrase("Vault passphrase: ");
             let provider = Box::new(UsbFileVaultProvider::new(path));
             let mut service = SignerService::new(

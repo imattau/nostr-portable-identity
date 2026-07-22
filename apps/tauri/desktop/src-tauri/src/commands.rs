@@ -10,6 +10,16 @@ use nostr_portable_vault::{UsbFileVaultProvider, VaultProvider};
 
 use crate::AppState;
 
+fn validate_vault_path(path: &str) -> Result<String, String> {
+    let canonical = std::fs::canonicalize(path)
+        .map_err(|e| format!("invalid vault path '{}': {}", path, e))?;
+    let path_str = canonical.to_string_lossy().to_string();
+    if path_str.contains("..") {
+        return Err("vault path contains directory traversal".into());
+    }
+    Ok(path_str)
+}
+
 fn lock_state(state: &AppState) -> Result<std::sync::MutexGuard<'_, SignerService>, String> {
     state.signer.lock().map_err(|_| "signer lock poisoned".to_string())
 }
@@ -56,6 +66,7 @@ pub fn unlock_vault(
     passphrase: String,
     _timeout: u64,
 ) -> Result<(), String> {
+    let _canonical = validate_vault_path(&path)?;
     let provider: Box<dyn VaultProvider> = Box::new(UsbFileVaultProvider::new(&path));
     {
         let mut signer = lock_state(&state)?;
@@ -132,6 +143,7 @@ pub fn create_vault(
     passphrase: String,
     nsec: Option<String>,
 ) -> Result<String, String> {
+    let _canonical = validate_vault_path(&path)?;
     let provider = UsbFileVaultProvider::new(&path);
     let keys = match nsec {
         Some(nsec) => nostr_portable_crypto::parse_keys(&nsec).map_err(|e| e.to_string())?,
@@ -144,6 +156,7 @@ pub fn create_vault(
 
 #[tauri::command]
 pub fn vault_info(path: String) -> Result<String, String> {
+    let _canonical = validate_vault_path(&path)?;
     let provider = UsbFileVaultProvider::new(&path);
     let vault = provider.load_encrypted_vault().map_err(|e| e.to_string())?;
     serde_json::to_string_pretty(&vault).map_err(|e| format!("serialization error: {}", e))

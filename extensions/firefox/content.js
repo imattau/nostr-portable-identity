@@ -7,11 +7,11 @@ window.addEventListener("message", async (event) => {
   try {
     const response = await chrome.runtime.sendMessage({ method, params, origin: window.location.origin });
     if (response.error) {
-      window.postMessage({ type: "nostr-response", method, error: response.error }, "*");
+      window.postMessage({ type: "nostr-response", method, error: response.error }, window.location.origin);
     } else {
-      window.postMessage({ type: "nostr-response", method, result: response.result }, "*");
+      window.postMessage({ type: "nostr-response", method, result: response.result }, window.location.origin);
     }
   } catch (error) {
-    window.postMessage({ type: "nostr-response", method, error: error.message }, "*");
+    window.postMessage({ type: "nostr-response", method, error: error.message }, window.location.origin);
   }
 });
