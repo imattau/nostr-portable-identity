@@ -27,7 +27,7 @@ modules:
         /app/share/icons/hicolor/128x128/apps/com.nostr.portable.identity.png
     sources:
       - type: file
-        path: ../../apps/tauri/desktop/src-tauri/target/release/nostr-portable-desktop
+        path: ../../target/release/nostr-portable-desktop
       - type: file
         path: ../../apps/tauri/desktop/src-tauri/icons/icon.png
       - type: file

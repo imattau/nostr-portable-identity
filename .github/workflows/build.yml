@@ -156,7 +156,7 @@ jobs:
           path: |
             apps/tauri/desktop/src-tauri/target/release/bundle/deb/*.deb
             apps/tauri/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
-            apps/tauri/desktop/src-tauri/target/release/nostr-portable-desktop
+            target/release/nostr-portable-desktop
           if-no-files-found: warn
 
   tauri-linux-flatpak:
@@ -272,7 +272,7 @@ jobs:
           path: |
             apps/tauri/desktop/src-tauri/target/release/bundle/msi/*.msi
             apps/tauri/desktop/src-tauri/target/release/bundle/nsis/*.exe
-            apps/tauri/desktop/src-tauri/target/release/nostr-portable-desktop.exe
+            target/release/nostr-portable-desktop.exe
           if-no-files-found: warn
 
   tauri-android:

@@ -1,0 +1,16 @@
+[package]
+name = "nostr-portable-usb-daemon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+nostr-portable-vault = { path = "../vault" }
+nostr-portable-permissions = { path = "../permissions" }
+nostr-portable-signer-core = { path = "../signer-core" }
+log = "0.4"
+env_logger = "0.11"
+ctrlc = "3"
+dirs = "6"
+dunce = "1"
