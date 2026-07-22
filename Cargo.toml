@@ -8,7 +8,6 @@ members = [
     "crates/protocol",
     "crates/signer-core",
     "crates/cli",
-    "crates/usb-daemon",
     "apps/tauri/desktop/src-tauri",
     "platform/desktop-native-messaging/host",
 ]
