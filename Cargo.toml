@@ -8,11 +8,12 @@ members = [
     "crates/protocol",
     "crates/signer-core",
     "crates/cli",
+    "crates/usb-daemon",
     "apps/tauri/desktop/src-tauri",
     "platform/desktop-native-messaging/host",
 ]
 
 [workspace.package]
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 license = "LGPL-3.0-or-later"
