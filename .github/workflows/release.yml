@@ -208,10 +208,12 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub \
             https://flathub.org/repo/flathub.flatpakrepo
+      - name: Install GNOME SDK
+        run: |
+          flatpak install --user --assumeyes flathub org.gnome.Sdk/x86_64/50
       - name: Build Flatpak
         run: |
           flatpak-builder --user --force-clean \
-            --install-deps \
             --repo=flatpak-repo \
             flatpak-build \
             build-aux/flatpak/com.nostr.portable.identity.yml
