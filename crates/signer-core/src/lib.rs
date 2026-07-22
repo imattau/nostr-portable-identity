@@ -1,3 +1,5 @@
+pub mod identity;
+
 use std::time::{Duration, Instant};
 
 use nostr::event::{Event, Kind};

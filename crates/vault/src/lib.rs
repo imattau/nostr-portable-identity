@@ -1,3 +1,5 @@
+pub mod providers;
+
 use std::path::PathBuf;
 use std::fs;
 use nostr_portable_crypto as crypto;
