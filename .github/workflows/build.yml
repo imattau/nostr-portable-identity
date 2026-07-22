@@ -12,6 +12,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  extension-chromium:
+    name: Extension (Chromium)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package Chromium extension
+        run: |
+          cd extensions/chromium
+          zip -r ../../chromium-extension.zip . \
+            -x "*.gitkeep" -x ".*"
+      - name: Upload Chromium extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-extension
+          path: chromium-extension.zip
+          if-no-files-found: error
+
+  extension-firefox:
+    name: Extension (Firefox)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package Firefox extension
+        run: |
+          cd extensions/firefox
+          zip -r ../../firefox-extension.zip . \
+            -x "*.gitkeep" -x ".*"
+      - name: Upload Firefox extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension
+          path: firefox-extension.zip
+          if-no-files-found: error
+
   rust-workspace:
     name: Rust workspace (${{ matrix.os }})
     strategy:
