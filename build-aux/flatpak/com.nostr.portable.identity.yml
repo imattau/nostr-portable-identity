@@ -15,29 +15,6 @@ finish-args:
   - --talk-name=org.kde.StatusNotifierWatcher
 
 modules:
-  - name: libayatana-indicator
-    buildsystem: meson
-    config-opts:
-      - -Dtests=false
-      - -Dgtk_doc=false
-      - -Dintrospection=false
-    sources:
-      - type: archive
-        url: https://github.com/AyatanaIndicators/libayatana-indicator/archive/refs/tags/0.9.5.tar.gz
-        sha256: 73d71c908b803f12e4a5ecd8392511b58afbdd0c82ad7909611a17bb7847c5c8
-
-  - name: libayatana-appindicator
-    buildsystem: cmake-ninja
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DENABLE_TESTS=OFF
-      - -DENABLE_GTK_DOC=OFF
-      - -DENABLE_INTROSPECTION=OFF
-    sources:
-      - type: archive
-        url: https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.6.0.tar.gz
-        sha256: 23be92ad8eb9625ce93b23b14f82f3cf88a4970c31d48581945ddfbac0441d06
-
   - name: nostr-portable-identity
     buildsystem: simple
     build-commands:

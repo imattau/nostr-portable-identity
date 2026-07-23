@@ -115,7 +115,9 @@ pub fn run() {
             #[cfg(desktop)]
             {
                 let handle = app.handle().clone();
-                setup_tray(app.handle())?;
+                if let Err(e) = setup_tray(app.handle()) {
+                    log::warn!("Failed to set up tray icon: {}", e);
+                }
                 ipc_server::start_ipc_server(handle);
             }
             Ok(())
