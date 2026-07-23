@@ -100,8 +100,8 @@ jobs:
         with:
           name: tauri-linux
           path: |
-            apps/tauri/desktop/src-tauri/target/release/bundle/deb/*.deb
-            apps/tauri/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            target/release/bundle/deb/*.deb
+            target/release/bundle/appimage/*.AppImage
             target/release/nostr-portable-desktop
 
   tauri-windows:
@@ -131,8 +131,8 @@ jobs:
         with:
           name: tauri-windows
           path: |
-            apps/tauri/desktop/src-tauri/target/release/bundle/msi/*.msi
-            apps/tauri/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            target/release/bundle/msi/*.msi
+            target/release/bundle/nsis/*.exe
             target/release/nostr-portable-desktop.exe
 
   tauri-android:
